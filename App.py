@@ -1,89 +1,114 @@
 import pygame
 import random
-import sys
 
+# Initialize Pygame
 pygame.init()
 
-# Screen
-WIDTH, HEIGHT = 800, 600
+# Screen Settings
+WIDTH, HEIGHT = 600, 700
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("💩 Catch the Poop Game")
+pygame.display.set_caption("Gu-Khor Ohi Game")
 
 # Colors
-WHITE = (255, 255, 255)
+SKY_BLUE = (135, 206, 235)
+BROWN = (101, 67, 33)
 BLACK = (0, 0, 0)
-SKIN = (255, 220, 180)
-BLUE = (0, 120, 255)
-BROWN = (139, 69, 19)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+SKIN = (255, 224, 189)
 
-clock = pygame.time.Clock()
-font = pygame.font.SysFont(None, 36)
+# Game Constants
+GRAVITY = 5
+Ohi_SPEED = 8
 
-# Player
-player_x = 350
-player_y = 500
-player_speed = 7
+# Fonts
+font_small = pygame.font.SysFont("Arial", 22, bold=True)
+font_large = pygame.font.SysFont("Arial", 36, bold=True)
 
-# Poop
-poop_x = random.randint(50, 750)
-poop_y = 0
-poop_speed = 5
+class Poop:
+    def __init__(self):
+        self.x = random.randint(50, WIDTH - 50)
+        self.y = -50
+        self.radius = 20
 
-score = 0
+    def fall(self):
+        self.y += GRAVITY
 
-while True:
-    screen.fill(WHITE)
+    def draw(self):
+        # Drawing a simple poop shape using circles
+        pygame.draw.circle(screen, BROWN, (self.x, self.y), self.radius)
+        pygame.draw.circle(screen, BROWN, (self.x, self.y - 15), self.radius - 5)
+        pygame.draw.circle(screen, BROWN, (self.x, self.y - 25), self.radius - 12)
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+class Ohi:
+    def __init__(self):
+        self.width = 100
+        self.height = 150
+        self.x = WIDTH // 2 - self.width // 2
+        self.y = HEIGHT - self.height - 20
 
-    # Move player
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] and player_x > 0:
-        player_x -= player_speed
-    if keys[pygame.K_RIGHT] and player_x < WIDTH - 100:
-        player_x += player_speed
+    def move(self, keys):
+        if keys[pygame.K_LEFT] and self.x > 0:
+            self.x -= Ohi_SPEED
+        if keys[pygame.K_RIGHT] and self.x < WIDTH - self.width:
+            self.x += Ohi_SPEED
 
-    # Falling poop
-    poop_y += poop_speed
+    def draw(self):
+        # Head
+        pygame.draw.circle(screen, SKIN, (self.x + 50, self.y + 30), 30)
+        # Open Mouth (Ha kora mukh)
+        pygame.draw.ellipse(screen, BLACK, (self.x + 35, self.y + 35, 30, 20))
+        # Body (Ganji)
+        pygame.draw.rect(screen, WHITE, (self.x + 20, self.y + 60, 60, 80))
+        # Text on Ganji
+        label = font_small.render("OHI", True, RED)
+        screen.blit(label, (self.x + 35, self.y + 85))
 
-    # Reset poop
-    if poop_y > HEIGHT:
-        poop_y = 0
-        poop_x = random.randint(50, 750)
+def main():
+    clock = pygame.time.Clock()
+    ohi = Ohi()
+    poops = [Poop()]
+    score = 0
+    running = True
 
-    # Collision (mouth)
-    mouth_rect = pygame.Rect(player_x + 30, player_y + 20, 40, 20)
-    poop_rect = pygame.Rect(poop_x, poop_y, 30, 30)
+    while running:
+        screen.fill(SKY_BLUE)
+        keys = pygame.key.get_pressed()
 
-    if poop_rect.colliderect(mouth_rect):
-        score += 1
-        poop_y = 0
-        poop_x = random.randint(50, 750)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 
-    # Draw player
-    pygame.draw.circle(screen, SKIN, (player_x + 50, player_y + 40), 40)   # head
-    pygame.draw.rect(screen, BLUE, (player_x + 15, player_y + 80, 70, 60)) # shirt
+        ohi.move(keys)
+        ohi.draw()
 
-    # Eyes
-    pygame.draw.circle(screen, BLACK, (player_x + 35, player_y + 30), 4)
-    pygame.draw.circle(screen, BLACK, (player_x + 65, player_y + 30), 4)
+        for p in poops[:]:
+            p.fall()
+            p.draw()
 
-    # Mouth open
-    pygame.draw.ellipse(screen, BLACK, (player_x + 30, player_y + 50, 40, 20))
+            # Collision Detection (Check if poop enters mouth area)
+            mouth_rect = pygame.Rect(ohi.x + 35, ohi.y + 35, 30, 20)
+            poop_rect = pygame.Rect(p.x - 15, p.y - 15, 30, 30)
 
-    # Shirt text
-    text_ohi = font.render("OHI", True, WHITE)
-    screen.blit(text_ohi, (player_x + 20, player_y + 95))
+            if mouth_rect.colliderect(poop_rect):
+                score += 1
+                poops.remove(p)
+                poops.append(Poop())
 
-    # Draw poop
-    pygame.draw.circle(screen, BROWN, (poop_x + 15, poop_y + 15), 15)
+            # Reset if poop falls off screen
+            if p.y > HEIGHT:
+                poops.remove(p)
+                poops.append(Poop())
 
-    # Score
-    score_text = font.render("Score: " + str(score), True, BLACK)
-    screen.blit(score_text, (10, 10))
+        # Display Score
+        score_text = font_large.render(f"Score: {score}", True, BLACK)
+        screen.blit(score_text, (20, 20))
 
-    pygame.display.update()
-    clock.tick(60)
+        pygame.display.flip()
+        clock.tick(60)
+
+    pygame.quit()
+
+if __name__ == "__main__":
+    main()
+    
