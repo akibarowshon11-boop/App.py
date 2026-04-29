@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ohi-r Gu-Khor Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body { margin: 0; overflow: hidden; background: #87CEEB; touch-action: none; font-family: Arial; }
+        canvas { display: block; background: #87CEEB; }
+        #ui { position: absolute; top: 10px; left: 10px; font-size: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="ui">Ohi koita khailo: <span id="score">0</span></div>
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const scoreElement = document.getElementById("score");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let score = 0;
+    let ohiX = canvas.width / 2 - 40;
+    const ohiY = canvas.height - 150;
+    const ohiWidth = 100;
+
+    let poops = [];
+
+    // Touch control
+    window.addEventListener("touchmove", (e) => {
+        ohiX = e.touches[0].clientX - ohiWidth / 2;
+    });
+
+    function createPoop() {
+        poops.push({
+            x: Math.random() * (canvas.width - 40),
+            y: -50,
+            speed: 4 + Math.random() * 5
+        });
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Ohi Character
+        // Head
+        ctx.fillStyle = "#FFE0BD";
+        ctx.beginPath();
+        ctx.arc(ohiX + 50, ohiY + 30, 30, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Open Mouth (Ha kora)
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.ellipse(ohiX + 50, ohiY + 35, 15, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ganji
+        ctx.fillStyle = "white";
+        ctx.fillRect(ohiX + 20, ohiY + 60, 60, 80);
+        
+        ctx.fillStyle = "red";
+        ctx.font = "bold 18px Arial";
+        ctx.fillText("OHI", ohiX + 35, ohiY + 100);
+
+        // Poops logic
+        poops.forEach((p, index) => {
+            p.y += p.speed;
+            ctx.font = "40px Arial";
+            ctx.fillText("💩", p.x, p.y);
+
+            // Catching in mouth area
+            if (p.y > ohiY && p.y < ohiY + 50 && p.x > ohiX && p.x < ohiX + ohiWidth) {
+                score++;
+                scoreElement.innerText = score;
+                poops.splice(index, 1);
+            }
+
+            if (p.y > canvas.height) poops.splice(index, 1);
+        });
+
+        requestAnimationFrame(draw);
+    }
+
+    setInterval(createPoop, 800);
+    draw();
+</script>
+</body>
+</html>
+
